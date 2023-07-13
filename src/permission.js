@@ -56,7 +56,6 @@ router.beforeEach(async(to, from, next) => {
   //     NProgress.done()
   //   }
   // }
-  
   // 目前作为内嵌应用使用，不判断登录直接放行
   next()
 })

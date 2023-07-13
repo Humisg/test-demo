@@ -1,20 +1,23 @@
 <template>
   <ProTable
     :table-columns="tableColumns"
-    :request-api="getList"
+    :request-api="requestApi"
     :data-call-back="dataCallBack"
   >
+    <template #tableHeader>
+      <w-button type="primary" link> 新增 </w-button>
+    </template>
     <template #orgCode="scope">
-      <el-button type="primary" link>
+      <w-button type="primary" link>
         {{ scope.row.orgCode }}
-      </el-button>
+      </w-button>
     </template>
   </ProTable>
 </template>
 
 <script>
 import ProTable from '@/components/ProTable'
-import axios from 'axios'
+import { getDeployList, getOrgList } from '@/api/test'
 
 export default {
   name: 'TestMyTable',
@@ -24,13 +27,17 @@ export default {
   data() {
     return {
       tableColumns: [
-        { prop: 'orgCode', label: '主机构编号', isShow: true },
-        { prop: 'orgName', label: '机构名称', isShow: true },
+        { prop: 'orgCode', label: '主机构编号', isShow: true,
+          enum: getOrgList,
+          search: { el: 'select', props: { filterable: true }},
+          fieldNames: { label: 'orgName', value: 'orgCode' }
+        },
+        { prop: 'orgName', label: '机构名称', isShow: true, search: { el: 'input' }},
         {
           prop: 'isLocal', label: '部署方式', isShow: true,
           render: (scope) => {
             return (
-              scope.row.isLocal == 1 ? <el-tag type='success'>本地</el-tag> : <el-tag type='success'>云端</el-tag>
+              scope.row.isLocal == 1 ? <w-tag type='success'>本地</w-tag> : <w-tag type='success'>云端</w-tag>
             )
           },
           search: { el: 'select', props: { filterable: true }}
@@ -43,19 +50,15 @@ export default {
           prop: 'action', label: '操作', isShow: true,
           render: (scope) => {
             return (
-              <el-button type='primary' link> 查看 </el-button>
+              <w-button type='primary' link> 查看 </w-button>
             )
           }
         }
       ],
-      data: []
+      requestApi: getDeployList
     }
   },
   methods: {
-    getList(params) {
-      console.log('getList', params)
-      return axios.get('winbpweb/p?action=newupay&beanaction=getOrgInfoConfigList', { params })
-    },
     dataCallBack(res) {
       return res.jsonArray
     }

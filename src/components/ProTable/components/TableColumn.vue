@@ -11,11 +11,10 @@ export default {
   methods: {
     RenderTableColumn(item) {
       const slots = this.$scopedSlots
-      // console.log('this.handleProp(item.prop)', this.handleProp(item.prop))
       return (
         <template>
           {item.isShow && (
-            <el-table-column
+            <w-table-column
               attrs={item}
               align={item.align ?? 'center'}
               showOverflowTooltip={item.showOverflowTooltip ?? item.prop !== 'operation'}
@@ -26,9 +25,9 @@ export default {
                   if (slots[handleProp(item.prop)]) return slots[handleProp(item.prop)](scope)
                   if (item.tag) {
                     return (
-                      <el-tag type={this.getTagType(item, scope)}>
+                      <w-tag type={this.getTagType(item, scope)}>
                         {this.renderCellData(item, scope)}
-                      </el-tag>
+                      </w-tag>
                     )
                   }
                   return this.renderCellData(item, scope)
@@ -40,21 +39,20 @@ export default {
                 }
               }}
             >
-            </el-table-column>
+            </w-table-column>
           )}
         </template>
       )
     },
     renderCellData(item, scope) {
+      if (item.enum) {
+        if (typeof item.enum === 'function') {
+          return item.enum(scope.row)
+        }
+        const enumItem = item.enum.find((item) => item.value === scope.row[item.prop])
+        return enumItem ? enumItem.label : ''
+      }
       return scope.row[item.prop]
-      // if (item.enum) {
-      //   if (typeof item.enum === 'function') {
-      //     return item.enum(scope.row)
-      //   }
-      //   const enumItem = item.enum.find((item) => item.value === scope.row[item.prop])
-      //   return enumItem ? enumItem.label : ''
-      // }
-      // return scope.row[item.prop]
     }
   },
   render(h, context) {

@@ -1,19 +1,21 @@
 <template>
   <component
-    :is="column.search && column.search.render || `el-${column.search && column.search.el}`"
+    :is="column.search && column.search.render || `w-${column.search && column.search.el}`"
     v-model.trim="_searchParam[column.search && column.search.key || handleProp(column.prop)]"
     v-bind="{ ...handleSearchProps, ...placeholder, searchParam: _searchParam, clearable }"
     :data="column.search && column.search.el === 'tree-select' ? columnEnum : []"
-    :options="['cascader', 'select-v2'].includes(column.search && column.search.el) ? columnEnum : []"
+    :options="['cascader'].includes(column.search && column.search.el) ? columnEnum : []"
+    v-on="getListeners()"
   >
     <template v-if="column.search && column.search.el === 'cascader'" #default="{ data }">
-      <span>{{ data[fieldNames.label] }}</span>
+      <span style="width: 100px;">{{ data[fieldNames.label] }}</span>
     </template>
     <template v-if="column.search && column.search.el === 'select'">
       <component
-        :is="`el-option`"
+        :is="`w-option`"
         v-for="(col, index) in columnEnum"
         :key="index"
+        :style="selectOptionStyle"
         :label="col[fieldNames.label]"
         :value="col[fieldNames.value]"
       />
@@ -36,11 +38,17 @@ export default {
     searchParam: {
       type: Object,
       default: () => ({})
+    },
+    // 搜索方法
+    search: {
+      type: Function,
+      default: () => {}
     }
   },
   data() {
     return {
-      handleProp: handleProp
+      handleProp: handleProp,
+      selectOptionStyle: {}
     }
   },
   computed: {
@@ -48,13 +56,8 @@ export default {
       return this.searchParam
     },
     columnEnum() {
-      let enumData = this.enumMap.get(this.column.prop)
+      const enumData = this.enumMap[this.column.prop]
       if (!enumData) return []
-      if (this.column.search?.el === 'select-v2' && this.column.fieldNames) {
-        enumData = enumData.map((item) => {
-          return { ...item, label: item[this.fieldNames.value.label], value: item[this.fieldNames.value.value] }
-        })
-      }
       return enumData
     },
     fieldNames() {
@@ -71,9 +74,6 @@ export default {
       const children = this.fieldNames.value.children
       const searchEl = this.column.search?.el
       let searchProps = this.column.search?.props ?? {}
-      if (searchEl === 'tree-select') {
-        searchProps = { ...searchProps, props: { ...searchProps.props, label, children }, nodeKey: value }
-      }
       if (searchEl === 'cascader') {
         searchProps = { ...searchProps, props: { ...searchProps.props, label, value, children }}
       }
@@ -92,11 +92,26 @@ export default {
     clearable() {
       const search = this.column.search
       return search?.props?.clearable ?? (search?.defaultValue === null || search?.defaultValue === undefined)
-    },
+    }
+  },
+  methods: {
+    getListeners() {
+      const listeners = this.column.search?.listeners ?? {}
+      if (this.column.search.el === 'select') {
+        // select 的 focus特殊处理，解决下拉框宽度远超过输入框的问题
+        listeners.focus = (evt) => {
+          this.$nextTick(() => {
+            const width = evt.srcElement.offsetWidth + 'px'
+            this.selectOptionStyle = { width }
+          })
+        }
+        // select的值改变时，调用搜索方法
+        listeners.change = (val) => {
+          this.search()
+        }
+      }
+      return listeners
+    }
   }
 }
 </script>
-
-<style scoped>
-
-</style>

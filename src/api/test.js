@@ -24,3 +24,12 @@ export function getDeployList(params) {
     params
   })
 }
+
+// 主机构数据
+export function getOrgList(params) {
+  return request({
+    url: '/winbpweb/octopus/getAllMainorgs',
+    method: 'get',
+    params
+  })
+}

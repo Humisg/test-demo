@@ -1,6 +1,6 @@
 <template>
   <!-- 分页组件 -->
-  <el-pagination
+  <w-pagination
     :background="true"
     :current-page="pageNum"
     :page-size="pageSize"

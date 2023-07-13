@@ -17,13 +17,13 @@
         </div>
         <div v-if="toolButton" class="header-button-ri">
           <slot name="toolButton">
-            <el-button icon="el-icon-refresh" circle @click="getTableList" />
-            <el-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch" />
+            <w-button icon="el-icon-refresh" circle @click="getTableList" />
+            <w-button icon="el-icon-search" circle @click="isShowSearch = !isShowSearch" />
           </slot>
         </div>
       </div>
       <!-- 表格主体 -->
-      <el-table
+      <w-table
         ref="tableRef"
         v-bind="$attrs"
         :data="data || tableData"
@@ -35,7 +35,7 @@
         <slot />
         <div v-for="item in tableColumns" :key="item[rowKey]">
           <!-- selection || index || expand -->
-          <el-table-column
+          <w-table-column
             v-if="item.type && ['selection', 'index', 'expand'].includes(item.type)"
             v-bind="item"
             :align="item.align || 'center'"
@@ -45,7 +45,7 @@
               <component :is="item.render" v-if="item.render" v-bind="scope" />
               <slot v-else :name="item.type" v-bind="scope" />
             </template>
-          </el-table-column>
+          </w-table-column>
           <!-- other -->
           <TableColumn :column="item">
             <template v-for="slot in Object.keys($scopedSlots)" #[slot]="scope">
@@ -66,7 +66,7 @@
             </slot>
           </div>
         </template>
-      </el-table>
+      </w-table>
       <!-- 分页组件 -->
       <slot name="pagination">
         <Pagination
@@ -100,17 +100,6 @@ export default {
     SearchForm
   },
   props: {
-    // interface ColumnProps<T = any> extends Partial<Omit<TableColumnCtx<T>, "children" | "renderCell" | "renderHeader">> {
-    //   tag?: boolean; // 是否是标签展示
-    //   isShow?: boolean; // 是否显示在表格当中
-    //   search?: SearchProps | undefined; // 搜索项配置
-    //   enum?: EnumProps[] | ((params?: any) => Promise<any>); // 枚举类型（字典）
-    //   isFilterEnum?: boolean; // 当前单元格值是否根据 enum 格式化（示例：enum 只作为搜索项数据）
-    //   fieldNames?: FieldNamesProps; // 指定 label && value && children 的 key 值
-    //   headerRender?: (scope: HeaderRenderScope<T>) => VNode; // 自定义表头内容渲染（tsx语法）
-    //   render?: (scope: RenderScope<T>) => VNode | string; // 自定义单元格内容渲染（tsx语法）
-    //   _children?: ColumnProps<T>[]; // 多级表头
-    // }
     tableColumns: {
       type: Array,
       default: () => []
@@ -184,7 +173,7 @@ export default {
       searchInitParam: {},
       // 总参数(包含分页和查询参数)
       totalParam: {},
-      enumMap: new Map(),
+      enumMap: {},
       flatColumns: {},
       searchColumns: [],
       isSelected: false,
@@ -210,6 +199,10 @@ export default {
     this.flatColumns = this.flatColumnsFunc(this.tableColumns)
     this.initSearchColumns()
   },
+  mounted() {
+    // 是否自动执行请求
+    this.requestAuto && this.getTableList()
+  },
   methods: {
     /**
      * @description 获取表格数据
@@ -221,7 +214,7 @@ export default {
       try {
         // 先把初始化参数和分页参数放到总参数里面
         Object.assign(this.totalParam, this.initParam, this.isPageable ? this.pageParam : {})
-        let { data } = await api({ ...this.searchInitParam, ...this.totalParam })
+        let data = await api({ ...this.searchInitParam, ...this.totalParam })
         this.dataCallBack && (data = this.dataCallBack(data))
         // this.tableData = this.isPageable ? data.list : data
         this.tableData = data
@@ -281,9 +274,10 @@ export default {
     async setEnumMap(col) {
       if (!col.enum) return
       // 如果当前 enum 为后台数据需要请求数据，则调用该请求接口，并存储到 enumMap
-      if (typeof col.enum !== 'function') return this.enumMap.set(col.prop, col.enum)
-      const { data } = await col.enum()
-      this.enumMap.set(col.prop, data)
+      if (typeof col.enum !== 'function') return this.$set(this.enumMap, col.prop, col.enum)
+      const res = await col.enum()
+      const data = res.data || res.jsonArray || res
+      this.$set(this.enumMap, col.prop, data)
     },
     initSearchColumns() {
       // 过滤需要搜索的配置项
@@ -335,12 +329,6 @@ export default {
       this.updatedTotalParam()
       this.getTableList()
     }
-  },
-  mounted() {
-    // // 初始化查询参数
-    // this.searchInitParam = this.$refs.searchForm.getSearchParam()
-    // 是否自动执行请求
-    this.requestAuto && this.getTableList()
   }
 }
 </script>
